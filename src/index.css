@@ -1,0 +1,142 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ---------- Base ---------- */
+@layer base {
+  html {
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+  body {
+    font-family: theme('fontFamily.sans');
+    color: theme('colors.ink.900');
+    background-color: theme('colors.ivory');
+    background-image:
+      radial-gradient(at 12% 8%, rgba(239, 204, 115, 0.18) 0, transparent 45%),
+      radial-gradient(at 88% 12%, rgba(217, 130, 90, 0.14) 0, transparent 50%),
+      radial-gradient(at 50% 92%, rgba(141, 165, 121, 0.16) 0, transparent 55%);
+    background-attachment: fixed;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4 {
+    font-family: theme('fontFamily.display');
+    font-weight: 500;
+    color: theme('colors.ink.900');
+    letter-spacing: -0.01em;
+  }
+
+  ::selection {
+    background: theme('colors.mustard.200');
+    color: theme('colors.ink.900');
+  }
+}
+
+/* ---------- Components ---------- */
+@layer components {
+  .paper {
+    background-color: #fbf6ec;
+    background-image: theme('backgroundImage.paper-grain');
+    background-size: 220px 220px;
+    border-radius: 18px;
+    box-shadow: theme('boxShadow.paper');
+    border: 1px solid rgba(75, 54, 33, 0.08);
+  }
+
+  .paper-soft {
+    background-color: #fbf6ec;
+    background-image: theme('backgroundImage.paper-grain');
+    background-size: 220px 220px;
+  }
+
+  .ink-link {
+    @apply underline decoration-terracotta-300 decoration-2 underline-offset-4 hover:decoration-terracotta-500 transition;
+  }
+
+  .chip {
+    @apply inline-flex items-center gap-1.5 rounded-full border border-ink-300/30 bg-parchment/60 px-3 py-1 text-sm text-ink-700;
+  }
+
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-full px-5 py-3 font-medium
+      transition-all active:scale-[0.98] focus:outline-none focus:ring-4 focus:ring-mustard-200/60
+      disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+  .btn-primary {
+    @apply btn bg-terracotta-500 text-ivory hover:bg-terracotta-600 shadow-soft;
+  }
+  .btn-secondary {
+    @apply btn bg-parchment text-ink-900 hover:bg-mustard-100 border border-ink-300/30;
+  }
+  .btn-ghost {
+    @apply btn bg-transparent text-ink-700 hover:bg-parchment/70;
+  }
+
+  .field-label {
+    @apply block text-sm font-medium text-ink-700 mb-2;
+  }
+  .field-hint {
+    @apply mt-1.5 text-xs text-ink-500;
+  }
+
+  .input,
+  .textarea,
+  .select {
+    @apply w-full rounded-2xl border border-ink-300/30 bg-ivory/70 px-4 py-3 text-ink-900
+      placeholder:text-ink-300 focus:border-terracotta-300 focus:outline-none focus:ring-4
+      focus:ring-terracotta-100/70 transition;
+    box-shadow: inset 0 1px 2px rgba(75, 54, 33, 0.06);
+  }
+  .textarea {
+    @apply min-h-[120px] leading-relaxed;
+  }
+
+  /* Hand-drawn decorative divider */
+  .ink-divider {
+    height: 16px;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='220' height='16' viewBox='0 0 220 16'><path d='M2 8 Q 28 2 54 8 T 108 8 T 162 8 T 218 8' fill='none' stroke='%238E3C1B' stroke-width='1.4' stroke-linecap='round'/></svg>");
+    background-repeat: repeat-x;
+    background-position: center;
+    opacity: 0.55;
+  }
+
+  /* Rough/sketchy outline */
+  .sketch-border {
+    border: 1.5px solid theme('colors.ink.700');
+    border-radius: 22px 26px 24px 28px / 26px 22px 28px 24px;
+  }
+
+  .marquee-mask {
+    mask-image: linear-gradient(to right, transparent, black 10%, black 90%, transparent);
+  }
+
+  /* Devanagari helper for Hindi labels */
+  .deva {
+    font-family: theme('fontFamily.deva');
+  }
+}
+
+/* model-viewer custom sizing */
+model-viewer {
+  width: 100%;
+  height: 420px;
+  background: transparent;
+  --poster-color: transparent;
+}
+
+/* Slow gentle floating */
+.float-y {
+  animation: floaty 7s ease-in-out infinite;
+}
+@keyframes floaty {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-6px);
+  }
+}

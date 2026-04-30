@@ -1,0 +1,15 @@
+[build]
+  command   = "npm run build"
+  publish   = "dist"
+  functions = "netlify/functions"
+
+# Runs Vite (port 5173) and the functions proxy together on :8888
+[dev]
+  command     = "npm run dev"
+  port        = 8888
+  targetPort  = 5173
+  autoLaunch  = true
+
+# Allow the functions to read environment variables at runtime
+[functions]
+  node_bundler = "esbuild"
