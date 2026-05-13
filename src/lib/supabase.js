@@ -12,6 +12,17 @@ import { createClient } from '@supabase/supabase-js'
 const url = import.meta.env.VITE_SUPABASE_URL
 const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
 
+// ── Diagnostic logging (Phase 1 debugging) ──────────────────────────────
+// Prints what the build received from Vercel env vars so we can diagnose
+// "Invalid API key" errors. Safe to leave in — only prints prefix/length.
+if (typeof window !== 'undefined') {
+  console.log('[Kalā Kathā] env check →')
+  console.log('  VITE_SUPABASE_URL      :', url || '(missing)')
+  console.log('  VITE_SUPABASE_ANON_KEY :', anonKey ? `${anonKey.slice(0, 25)}...${anonKey.slice(-10)}` : '(missing)')
+  console.log('  anon key length        :', anonKey?.length || 0, '(should be ~220)')
+  console.log('  anon key dots          :', (anonKey?.match(/\./g) || []).length, '(should be exactly 2)')
+}
+
 export const isSupabaseConfigured = Boolean(url && anonKey)
 
 export const supabase = isSupabaseConfigured
