@@ -6,8 +6,18 @@ const CraftsContext = createContext(null)
 const STORAGE_KEY = 'kk.crafts'
 const DRAFTS_KEY = 'kk.drafts'
 
-function genId(prefix = 'craft') {
-  return `${prefix}_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 6)}`
+// Generates a proper UUID v4 — Supabase's `id` column is `uuid` type
+// so the value must match xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx.
+function genId() {
+  if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+    return crypto.randomUUID()
+  }
+  // Fallback for very old browsers
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+    const r = (Math.random() * 16) | 0
+    const v = c === 'x' ? r : (r & 0x3) | 0x8
+    return v.toString(16)
+  })
 }
 
 function loadJSON(key, fallback) {
