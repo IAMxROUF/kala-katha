@@ -3,7 +3,16 @@
     "allow": [
       "mcp__cbd927f6-7499-4eaf-81f6-46aac1ce5c3a__netlify-user-services-reader",
       "mcp__cbd927f6-7499-4eaf-81f6-46aac1ce5c3a__netlify-team-services-reader",
-      "mcp__cbd927f6-7499-4eaf-81f6-46aac1ce5c3a__netlify-project-services-updater"
+      "mcp__cbd927f6-7499-4eaf-81f6-46aac1ce5c3a__netlify-project-services-updater",
+      "Bash(git -C \"C:/Users/ahmed/Desktop/ClaudeCode\" remote -v)",
+      "Bash(git -C \"C:/Users/ahmed/Desktop/ClaudeCode\" log --oneline -5)",
+      "Bash(git -C \"C:/Users/ahmed/Desktop/ClaudeCode\" status --short)",
+      "Bash(git -C \"C:/Users/ahmed/Desktop/ClaudeCode\" log --stat -2)",
+      "Bash(git -C \"C:/Users/ahmed/Desktop/ClaudeCode\" log origin/main --oneline -5)",
+      "Bash(git -C \"C:/Users/ahmed/Desktop/ClaudeCode\" status)",
+      "Bash(git -C \"C:/Users/ahmed/Desktop/ClaudeCode\" config user.name)",
+      "Bash(git -C \"C:/Users/ahmed/Desktop/ClaudeCode\" config user.email)",
+      "Bash(git -C \"C:/Users/ahmed/Desktop/ClaudeCode\" remote set-url origin https://github.com/IAMxROUF/kala-katha.git)"
     ]
   }
 }
