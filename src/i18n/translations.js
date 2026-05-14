@@ -90,7 +90,7 @@ export const translations = {
     },
     dashboard: {
       hello: 'Namaste',
-      subtitle: 'Your studio',
+      subtitle: 'My studio',
       myCrafts: 'My crafts',
       drafts: 'Drafts',
       addNew: 'Add a new craft',

@@ -45,24 +45,33 @@ export default function ArtisanProfile() {
   const { crafts } = useCrafts()
   const { user } = useAuth()
 
-  // All crafts by this maker
+  // Is this the logged-in user's own profile?
+  const isOwnProfile =
+    !!user &&
+    (user.phone === decodedKey || user.id === decodedKey || user.name === decodedKey)
+
+  // When viewing own profile, match crafts against ALL identifiers
+  // (id / phone / name) so we find every craft made on this account,
+  // even ones created before we started storing phone in the maker info.
+  const identifiers = isOwnProfile
+    ? [user?.id, user?.phone, user?.name].filter(Boolean)
+    : [decodedKey]
+
   const myCrafts = useMemo(
     () =>
       crafts.filter((c) => {
         const m = c.maker || {}
-        return (
-          (m.phone && m.phone === decodedKey) ||
-          (m.id && m.id === decodedKey) ||
-          (m.name && m.name === decodedKey)
+        return identifiers.some(
+          (key) =>
+            (m.phone && m.phone === key) ||
+            (m.id && m.id === key) ||
+            (m.name && m.name === key),
         )
       }),
-    [crafts, decodedKey],
+    [crafts, identifiers.join('|')],
   )
 
   const firstMaker = myCrafts[0]?.maker || {}
-  const isOwnProfile =
-    !!user &&
-    (user.phone === decodedKey || user.id === decodedKey || user.name === decodedKey)
 
   // Profile fields — derived + overridden by extras from localStorage
   const [extras, setExtras] = useState(() => loadExtras(decodedKey))

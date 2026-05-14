@@ -32,7 +32,8 @@
       "Bash(git -C \"C:/Users/ahmed/Desktop/ClaudeCode\" commit -m \"fix: await publishCraft in edit flow; profile editing UI; blurred photo backdrop; 'About the product' relabel\")",
       "Bash(git -C \"C:/Users/ahmed/Desktop/ClaudeCode\" commit -m \"feat: user pill in header links to artisan profile\")",
       "Bash(git -C \"C:/Users/ahmed/Desktop/ClaudeCode\" commit -m \"fix: artisan profile shows for own user even without crafts/extras yet\")",
-      "Bash(git -C \"C:/Users/ahmed/Desktop/ClaudeCode\" commit -m \"feat: say 'My crafts' on own artisan profile, 'Their crafts' for visitors\")"
+      "Bash(git -C \"C:/Users/ahmed/Desktop/ClaudeCode\" commit -m \"feat: say 'My crafts' on own artisan profile, 'Their crafts' for visitors\")",
+      "Bash(git -C \"C:/Users/ahmed/Desktop/ClaudeCode\" commit -m \"fix: profile finds own crafts by any identifier; 'My studio' label\")"
     ]
   }
 }

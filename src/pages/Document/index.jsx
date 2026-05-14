@@ -64,7 +64,12 @@ export default function DocumentFlow() {
     if (user) {
       setData((d) => ({
         ...d,
-        maker: { id: user.id, name: user.name, region: user.region || '' },
+        maker: {
+          id: user.id,
+          phone: user.phone || '',
+          name: user.name,
+          region: user.region || '',
+        },
       }))
     }
   }, [user])
