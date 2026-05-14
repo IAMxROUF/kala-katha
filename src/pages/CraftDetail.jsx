@@ -54,15 +54,25 @@ export default function CraftDetail() {
                 <button
                   type="button"
                   onClick={() => cover && setLightboxOpen(true)}
-                  className="block w-full overflow-hidden rounded-2xl bg-parchment cursor-zoom-in group"
+                  className="relative block w-full overflow-hidden rounded-2xl cursor-zoom-in group"
                   aria-label="Open full photo"
+                  style={{ backgroundColor: '#F1E6D2' }}
                 >
                   {cover ? (
-                    <img
-                      src={cover}
-                      alt={craft.title}
-                      className="w-full max-h-[640px] object-contain transition-transform group-hover:scale-[1.01]"
-                    />
+                    <>
+                      {/* Blurred backdrop using the same image — softens the empty sides */}
+                      <img
+                        src={cover}
+                        alt=""
+                        aria-hidden="true"
+                        className="absolute inset-0 w-full h-full object-cover blur-2xl scale-110 opacity-60 pointer-events-none"
+                      />
+                      <img
+                        src={cover}
+                        alt={craft.title}
+                        className="relative w-full max-h-[600px] mx-auto object-contain transition-transform group-hover:scale-[1.01]"
+                      />
+                    </>
                   ) : (
                     <div className="aspect-square w-full flex items-center justify-center text-ink-300">
                       <Paisley size={120} />

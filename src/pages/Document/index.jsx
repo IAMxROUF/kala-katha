@@ -83,18 +83,23 @@ export default function DocumentFlow() {
   async function handleSaveDraft() {
     setSavingDraft(true)
     try {
-      const saved = saveDraft({ ...data, lastStep: step })
-      setData((d) => ({ ...d, id: saved.id }))
+      const saved = await saveDraft({ ...data, lastStep: step })
+      if (saved?.id) setData((d) => ({ ...d, id: saved.id }))
       navigate('/dashboard')
     } finally {
       setSavingDraft(false)
     }
   }
 
-  function handlePublish() {
-    const published = publishCraft(data)
-    update({ id: published.id })
-    setStep(6)
+  async function handlePublish() {
+    try {
+      const published = await publishCraft(data)
+      if (published?.id) update({ id: published.id })
+      setStep(6)
+    } catch (e) {
+      console.error('[Document] publish failed:', e)
+      alert('Could not publish — please check your connection and try again.')
+    }
   }
 
   // Step 1 needs at least the front image to advance.

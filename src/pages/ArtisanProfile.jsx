@@ -1,29 +1,51 @@
-import { useMemo } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { useCrafts } from '../context/CraftsContext.jsx'
 import { useAuth } from '../context/AuthContext.jsx'
 import CraftCard from '../components/CraftCard.jsx'
 import { Divider, Paisley } from '../components/Decorations.jsx'
-import { IconUser, IconArrow } from '../components/Icons.jsx'
+import { IconUser } from '../components/Icons.jsx'
 import NotFound from './NotFound.jsx'
 
 /**
  * /artisan/:key
  *
- * Profile page for an artisan. The `key` is URL-encoded — it's whatever
- * identifies the maker (their phone number, demo id, or name slug).
- *
- * Profile data is derived from all crafts the maker has published. If a
- * dedicated maker profile exists in localStorage (`kk.makers`), that
- * overrides/augments the derived data.
+ * The `key` is a URL-encoded identifier — phone, user id, or maker name.
+ * Profile data: derived from crafts + extras stored in localStorage under
+ * `kk.makers` (keyed by the same `key`). Eventually we'll migrate this to
+ * a Supabase `makers` table.
  */
+const TYPES = [
+  { id: 'individual', label: 'Individual Artisan' },
+  { id: 'maker',      label: 'Craft Maker' },
+  { id: 'community',  label: 'Representing a Craft Community' },
+  { id: 'ngo',        label: 'NGO / Cultural Organisation' },
+]
+
+function loadExtras(key) {
+  try {
+    const map = JSON.parse(localStorage.getItem('kk.makers') || '{}')
+    return map[key] || {}
+  } catch {
+    return {}
+  }
+}
+
+function saveExtras(key, patch) {
+  try {
+    const map = JSON.parse(localStorage.getItem('kk.makers') || '{}')
+    map[key] = { ...(map[key] || {}), ...patch }
+    localStorage.setItem('kk.makers', JSON.stringify(map))
+  } catch {}
+}
+
 export default function ArtisanProfile() {
   const { key } = useParams()
   const decodedKey = decodeURIComponent(key || '')
   const { crafts } = useCrafts()
   const { user } = useAuth()
 
-  // Find all crafts by this maker (match on phone, id, or name)
+  // All crafts by this maker
   const myCrafts = useMemo(
     () =>
       crafts.filter((c) => {
@@ -37,38 +59,38 @@ export default function ArtisanProfile() {
     [crafts, decodedKey],
   )
 
-  // Maker profile = first craft's maker info (most recent crafts first)
-  const profile = useMemo(() => {
-    if (myCrafts.length === 0) return null
-    const first = myCrafts[0].maker || {}
-    // Try to load extra profile fields from localStorage
-    let extra = {}
-    try {
-      const map = JSON.parse(localStorage.getItem('kk.makers') || '{}')
-      extra = map[decodedKey] || {}
-    } catch {}
-    return {
-      name: extra.name || first.name || decodedKey || 'Anonymous Artisan',
-      region: extra.region || first.region || '',
-      type: extra.type || 'individual', // 'individual' | 'community' | 'ngo'
-      contact: extra.contact || '',
-      bio: extra.bio || '',
-    }
-  }, [myCrafts, decodedKey])
-
-  if (!profile) return <NotFound />
-
+  const firstMaker = myCrafts[0]?.maker || {}
   const isOwnProfile =
-    user &&
-    (user.phone === decodedKey ||
-      user.id === decodedKey ||
-      user.name === decodedKey)
+    !!user &&
+    (user.phone === decodedKey || user.id === decodedKey || user.name === decodedKey)
 
-  const typeLabel = {
-    individual: 'Individual Artisan',
-    community: 'Representing a Craft Community',
-    ngo: 'NGO / Cultural Organisation',
-  }[profile.type] || 'Individual Artisan'
+  // Profile fields — derived + overridden by extras from localStorage
+  const [extras, setExtras] = useState(() => loadExtras(decodedKey))
+  useEffect(() => {
+    setExtras(loadExtras(decodedKey))
+  }, [decodedKey])
+
+  const profile = {
+    name:    extras.name    || firstMaker.name    || decodedKey || 'Anonymous Artisan',
+    region:  extras.region  || firstMaker.region  || '',
+    type:    extras.type    || 'individual',
+    contact: extras.contact || '',
+    bio:     extras.bio     || '',
+  }
+
+  const [editing, setEditing] = useState(false)
+  const [form, setForm] = useState(profile)
+  useEffect(() => setForm(profile), [extras, firstMaker.name])
+
+  if (!myCrafts.length && !extras.name) return <NotFound />
+
+  function handleSave() {
+    saveExtras(decodedKey, form)
+    setExtras({ ...extras, ...form })
+    setEditing(false)
+  }
+
+  const typeLabel = TYPES.find((t) => t.id === profile.type)?.label || 'Individual Artisan'
 
   return (
     <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8 py-10">
@@ -88,40 +110,119 @@ export default function ArtisanProfile() {
           </div>
 
           <div className="flex-1 min-w-0">
-            <p className="font-hand text-xl text-terracotta-500">Documented by</p>
-            <h1 className="font-display text-4xl sm:text-5xl leading-tight">
-              {profile.name}
-            </h1>
-            {profile.region && (
-              <p className="mt-1 text-ink-700">{profile.region}</p>
-            )}
-            <div className="mt-3 flex flex-wrap items-center gap-2">
-              <span className="chip">
-                <IconUser size={14} className="inline mr-1 -mt-0.5" />
-                {typeLabel}
-              </span>
-              <span className="chip bg-mustard-100 text-mustard-500">
-                {myCrafts.length} {myCrafts.length === 1 ? 'craft' : 'crafts'} documented
-              </span>
-            </div>
+            <p className="font-hand text-xl text-terracotta-500">Artisan profile</p>
 
-            {profile.bio && (
-              <p className="mt-4 text-ink-700 leading-relaxed">{profile.bio}</p>
-            )}
+            {!editing ? (
+              <>
+                <h1 className="font-display text-4xl sm:text-5xl leading-tight">
+                  {profile.name}
+                </h1>
+                {profile.region && (
+                  <p className="mt-1 text-ink-700">{profile.region}</p>
+                )}
+                <div className="mt-3 flex flex-wrap items-center gap-2">
+                  <span className="chip">
+                    <IconUser size={14} className="inline mr-1 -mt-0.5" />
+                    {typeLabel}
+                  </span>
+                  <span className="chip bg-mustard-100 text-mustard-500">
+                    {myCrafts.length} {myCrafts.length === 1 ? 'craft' : 'crafts'} documented
+                  </span>
+                </div>
 
-            {profile.contact && (
-              <p className="mt-3 text-sm text-ink-500">
-                <span className="text-ink-300">Contact:</span> {profile.contact}
-              </p>
-            )}
+                {profile.bio && (
+                  <p className="mt-4 text-ink-700 leading-relaxed">{profile.bio}</p>
+                )}
+                {profile.contact && (
+                  <p className="mt-3 text-sm text-ink-500">
+                    <span className="text-ink-300">Contact:</span> {profile.contact}
+                  </p>
+                )}
 
-            {isOwnProfile && (
-              <Link
-                to="/dashboard?editProfile=1"
-                className="btn-secondary mt-5 text-sm inline-flex"
-              >
-                Edit my profile <IconArrow size={16} />
-              </Link>
+                {isOwnProfile && (
+                  <button
+                    onClick={() => setEditing(true)}
+                    className="btn-secondary mt-5 text-sm"
+                  >
+                    Edit my profile
+                  </button>
+                )}
+              </>
+            ) : (
+              <div className="space-y-4 mt-2">
+                <div>
+                  <label className="field-label">Name</label>
+                  <input
+                    className="input"
+                    value={form.name}
+                    onChange={(e) => setForm({ ...form, name: e.target.value })}
+                  />
+                </div>
+
+                <div>
+                  <label className="field-label">Region</label>
+                  <input
+                    className="input"
+                    placeholder="e.g. Bodoland, Assam"
+                    value={form.region}
+                    onChange={(e) => setForm({ ...form, region: e.target.value })}
+                  />
+                </div>
+
+                <div>
+                  <label className="field-label">I am a / an…</label>
+                  <div className="grid sm:grid-cols-2 gap-2">
+                    {TYPES.map((t) => (
+                      <button
+                        key={t.id}
+                        type="button"
+                        onClick={() => setForm({ ...form, type: t.id })}
+                        className={`text-left rounded-2xl border px-3 py-3 text-sm transition ${
+                          form.type === t.id
+                            ? 'bg-terracotta-100 border-terracotta-300 text-ink-900'
+                            : 'bg-ivory border-ink-300/30 text-ink-700 hover:bg-parchment'
+                        }`}
+                      >
+                        {t.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <label className="field-label">Contact number (optional)</label>
+                  <input
+                    className="input"
+                    placeholder="+91 …"
+                    value={form.contact}
+                    onChange={(e) => setForm({ ...form, contact: e.target.value })}
+                  />
+                  <p className="field-hint">
+                    Only shown on your public profile if you choose to share it.
+                  </p>
+                </div>
+
+                <div>
+                  <label className="field-label">A short bio (optional)</label>
+                  <textarea
+                    className="textarea"
+                    rows={3}
+                    placeholder="A few sentences about you and your craft journey."
+                    value={form.bio}
+                    onChange={(e) => setForm({ ...form, bio: e.target.value })}
+                  />
+                </div>
+
+                <div className="flex gap-2 pt-2">
+                  <button onClick={handleSave} className="btn-primary">Save</button>
+                  <button
+                    onClick={() => { setForm(profile); setEditing(false) }}
+                    className="btn-ghost text-sm"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
             )}
           </div>
         </div>

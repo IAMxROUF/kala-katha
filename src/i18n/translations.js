@@ -78,7 +78,7 @@ export const translations = {
       makerLabel: 'By',
     },
     craft: {
-      story: 'The story',
+      story: 'About the product',
       materials: 'Materials',
       technique: 'Technique',
       time: 'Time to make',
@@ -252,7 +252,7 @@ export const translations = {
       makerLabel: 'कारीगर:',
     },
     craft: {
-      story: 'कहानी',
+      story: 'उत्पाद के बारे में',
       materials: 'सामग्री',
       technique: 'तकनीक',
       time: 'बनाने का समय',
@@ -426,7 +426,7 @@ export const translations = {
       makerLabel: 'By',
     },
     craft: {
-      story: 'Kahaani',
+      story: 'Product ke baare mein',
       materials: 'Materials',
       technique: 'Technique',
       time: 'Banane ka time',

@@ -65,7 +65,7 @@ const EDIT_FIELDS = [
   { label: 'Materials',       state: 'edit_field_materials', col: 'materials' },
   { label: 'Technique',       state: 'edit_field_technique', col: 'technique' },
   { label: 'Time to make',    state: 'edit_field_time',      col: 'time_to_make' },
-  { label: 'Story',           state: 'edit_field_story',     col: 'story' },
+  { label: 'About product',   state: 'edit_field_story',     col: 'story' },
 ]
 function pickEditField(input) {
   const t = input.toLowerCase().trim()
@@ -516,12 +516,12 @@ async function structureWithAI(draft) {
   const model = process.env.OPENAI_MODEL || 'gpt-4o-mini'
 
   const system = `You are a specialist in Indian indigenous crafts and cultural heritage documentation.
-The artisan has provided structured details about their craft plus a free-form story (in any Indian language).
-Your job: produce a polished English description and fill in missing fields.
-Honor the artisan's voice. Don't invent facts you can't reasonably infer.
+The artisan has provided structured details about a craft product, plus free-form notes about the product (in any Indian language).
+Your job: write a clear, informative English description of the *product itself* — what it is, what it's used for, its significance — and fill in missing fields.
+Focus on the PRODUCT, not the artisan's personal story. Be factual and respectful.
 Return ONLY a valid JSON object.`
 
-  const user = `Document this Indian craft.
+  const user = `Document this Indian craft product.
 
 Product name:    ${draft.title || '(unknown)'}
 Craft tradition: ${draft.craft || '(unknown)'}
@@ -529,13 +529,13 @@ Region:          ${draft.region || '(unknown)'}
 Materials:       ${draft.materials || '(unknown)'}
 Technique:       ${draft.technique || '(not provided — please describe based on the tradition)'}
 
-Artisan's story (any language — translate to English in your response):
+Artisan's notes about the product (any language — translate to English):
 """
 ${draft.story || ''}
 """
 
 Return JSON with EXACTLY these 3 keys (all in English):
-- "description" : 2-3 warm sentences honoring the artisan's voice, mentioning the craft, region, and a hint of the story.
+- "description" : 2-3 informative sentences ABOUT THE PRODUCT — what it is, what it's used for, its cultural significance, and a hint of how it's made. Do not focus on the artisan personally.
 - "technique"   : If the artisan provided a technique above, polish it into 1-2 clear English sentences. If empty, describe the typical making process for this craft tradition.
 - "time"        : Estimated time to make one piece (e.g. "3-5 days", "2 weeks").`
 
@@ -747,13 +747,13 @@ function step6Prompt(skipped, heard = '') {
 function step7Prompt(photoCount) {
   return (
     `Wonderful! *${photoCount} photo${photoCount > 1 ? 's' : ''} received.* 📸\n\n` +
-    `*Step 7 of 7* — Story\n\n` +
-    `Tell me the *story* behind this craft. You can *type* or send a *voice note* in any language.\n\n` +
+    `*Step 7 of 7* — About the product\n\n` +
+    `Tell me *about this product*. You can *type* or send a *voice note* in any language.\n\n` +
     `🪶 *Please share:*\n` +
-    `• Who taught you this craft\n` +
-    `• Why it matters to you\n` +
-    `• Cultural or family significance\n` +
-    `• Any special memories\n\n` +
+    `• What this product is used for\n` +
+    `• Its cultural or historical significance\n` +
+    `• Unique features or special details\n` +
+    `• Any traditions associated with it\n\n` +
     `Send multiple messages if you like. Type *Done* when finished.`
   )
 }
@@ -778,7 +778,7 @@ function successSummary(craft) {
   if (craft.materials) fields.push(`🪵 *Materials:* ${craft.materials}`)
   if (craft.technique) fields.push(`⚒️ *Technique:* ${craft.technique}`)
   if (craft.time_to_make) fields.push(`⏱️ *Time:* ${craft.time_to_make}`)
-  if (craft.description) fields.push(`📖 *Story:* ${craft.description}`)
+  if (craft.description) fields.push(`📖 *About:* ${craft.description}`)
 
   return (
     `🎉 *Success!*\n\n` +

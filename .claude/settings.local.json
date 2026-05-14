@@ -28,7 +28,8 @@
       "Bash(git -C \"C:/Users/ahmed/Desktop/ClaudeCode\" commit -m \"feat: real WhatsApp quick reply buttons for welcome menu \\(with text fallback\\)\")",
       "Bash(git -C \"C:/Users/ahmed/Desktop/ClaudeCode\" commit -m \"feat: restructure WhatsApp flow into 7 explicit steps \\(product name, tradition, region, materials, technique-optional, photos 1-4, story\\)\")",
       "Bash(git -C \"C:/Users/ahmed/Desktop/ClaudeCode\" add -A)",
-      "Bash(git -C \"C:/Users/ahmed/Desktop/ClaudeCode\" commit -m \"feat: text-only logo, remove seeds, photo lightbox, edit button on dashboard, artisan profile page, WhatsApp edit flow\")"
+      "Bash(git -C \"C:/Users/ahmed/Desktop/ClaudeCode\" commit -m \"feat: text-only logo, remove seeds, photo lightbox, edit button on dashboard, artisan profile page, WhatsApp edit flow\")",
+      "Bash(git -C \"C:/Users/ahmed/Desktop/ClaudeCode\" commit -m \"fix: await publishCraft in edit flow; profile editing UI; blurred photo backdrop; 'About the product' relabel\")"
     ]
   }
 }
