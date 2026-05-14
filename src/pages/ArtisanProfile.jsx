@@ -237,9 +237,13 @@ export default function ArtisanProfile() {
 
       <Divider className="mt-10" />
 
-      <h2 className="mt-8 font-display text-2xl">Their crafts</h2>
+      <h2 className="mt-8 font-display text-2xl">
+        {isOwnProfile ? 'My crafts' : 'Their crafts'}
+      </h2>
       <p className="text-sm text-ink-500 mt-1">
-        Every piece documented by {profile.name} in the Kalā Kathā archive.
+        {isOwnProfile
+          ? 'Every piece you have documented in the Kalā Kathā archive.'
+          : `Every piece documented by ${profile.name} in the Kalā Kathā archive.`}
       </p>
 
       {myCrafts.length === 0 ? (
