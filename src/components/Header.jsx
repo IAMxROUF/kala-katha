@@ -58,10 +58,14 @@ export default function Header() {
             <LanguageSwitcher />
             {isAuthed ? (
               <div className="hidden sm:flex items-center gap-2">
-                <div className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-full bg-parchment border border-ink-300/20">
+                <Link
+                  to={`/artisan/${encodeURIComponent(user?.phone || user?.id || user?.name || '')}`}
+                  className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-full bg-parchment border border-ink-300/20 hover:bg-mustard-100 transition-colors"
+                  title="View / edit my profile"
+                >
                   <IconUser size={16} className="text-ink-700" />
                   <span className="text-sm">{user?.name}</span>
-                </div>
+                </Link>
                 <button onClick={signOut} className="btn-ghost text-sm py-2 px-3">
                   {t('nav.signOut')}
                 </button>
@@ -108,15 +112,25 @@ export default function Header() {
                   {t('nav.signIn')}
                 </Link>
               ) : (
-                <button
-                  onClick={() => {
-                    signOut()
-                    setOpen(false)
-                  }}
-                  className="btn-secondary mt-2 text-sm"
-                >
-                  {t('nav.signOut')}
-                </button>
+                <>
+                  <Link
+                    to={`/artisan/${encodeURIComponent(user?.phone || user?.id || user?.name || '')}`}
+                    onClick={() => setOpen(false)}
+                    className="flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm font-medium text-ink-700 hover:bg-parchment mt-2"
+                  >
+                    <IconUser size={16} />
+                    My profile — {user?.name}
+                  </Link>
+                  <button
+                    onClick={() => {
+                      signOut()
+                      setOpen(false)
+                    }}
+                    className="btn-secondary mt-1 text-sm"
+                  >
+                    {t('nav.signOut')}
+                  </button>
+                </>
               )}
             </nav>
           </div>
