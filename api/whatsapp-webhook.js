@@ -38,14 +38,15 @@ const S = {
   PUBLISHED: 'published',
 }
 
-// "Buttons" — action words that work like tappable options
+// "Buttons" — both real WhatsApp quick reply buttons AND typed words.
+// When user taps a button, Twilio sends the button TITLE as the message body,
+// so the same matcher list handles both tapping and typing.
 const ACTIONS = {
-  start:     ['start', 'begin', 'new', 'start new', 'start new documentation', '1'],
-  myCrafts:  ['my crafts', 'my docs', 'my documentations', 'archive', '2'],
-  how:       ['how', 'how it works', 'info', 'about', '3'],
-  help:      ['help', 'support', '4'],
-  done:      ['done', 'finished', 'finish'],
-  next:      ['next', 'continue', 'proceed', 'go'],
+  start:     ['start', 'start new', 'start new documentation', 'begin', 'new'],
+  myCrafts:  ['my crafts', 'my documentations', 'my docs', 'archive'],
+  how:       ['how it works', 'how', 'info', 'about'],
+  help:      ['help', 'help / support', 'support'],
+  done:      ['done', 'finished', 'finish', 'next', 'continue'],
   view:      ['view', 'see', 'open'],
   share:     ['share'],
   startOver: ['start over', 'restart', 'reset', 'cancel'],
@@ -111,7 +112,7 @@ export default async function handler(req, res) {
     if (['hi', 'hello', 'namaste', 'hey'].includes(lower)) {
       const conv = await loadConv(phone)
       await setConv(phone, S.AWAITING_MENU, conv?.draft_id || null)
-      return sendTwiML(res, welcomeMenu(profileName))
+      return await showWelcomeMenu(res, phone, profileName)
     }
 
     // ── 3) State machine ───────────────────────────────────────────────
@@ -123,7 +124,7 @@ export default async function handler(req, res) {
       // ─── IDLE ───
       case S.IDLE:
         await setConv(phone, S.AWAITING_MENU, null)
-        return sendTwiML(res, welcomeMenu(profileName))
+        return await showWelcomeMenu(res, phone, profileName)
 
       // ─── MENU ───
       case S.AWAITING_MENU:
@@ -137,14 +138,8 @@ export default async function handler(req, res) {
         if (matches(lower, ACTIONS.how)) {
           return sendTwiML(res, howItWorksText())
         }
-        return sendTwiML(
-          res,
-          `I didn't catch that. Reply with:\n\n` +
-            `▶️ *Start* — begin documentation\n` +
-            `📚 *My Crafts* — see archive\n` +
-            `ℹ️ *Info* — how it works\n` +
-            `❓ *Help* — get support`,
-        )
+        // Didn't match — re-show the menu so they can tap an option
+        return await showWelcomeMenu(res, phone, profileName, /*retry*/ true)
 
       // ─── STEP 1: Name ───
       case S.AWAITING_NAME: {
@@ -189,7 +184,7 @@ export default async function handler(req, res) {
 
       // ─── STEP 3: Details (free-form) ───
       case S.AWAITING_DETAILS: {
-        if (matches(lower, ACTIONS.next)) {
+        if (matches(lower, ACTIONS.done)) {
           // Check there's actually something to process
           const draft = await getDraft(draftId)
           if (!draft?.story?.trim()) {
@@ -201,7 +196,7 @@ export default async function handler(req, res) {
           // Process + publish
           return await processAndPublish({ res, draftId, phone })
         }
-        if (!text) return sendTwiML(res, 'Tell me about your craft, or type *Next* to continue.')
+        if (!text) return sendTwiML(res, 'Tell me about your craft, or type *Done* when finished.')
 
         // Append to the running "story" field
         const current = await getDraft(draftId)
@@ -213,7 +208,7 @@ export default async function handler(req, res) {
           : `✍️ *Got it.*`
         return sendTwiML(
           res,
-          `${ack}\n\nSend more details if you like (voice or text), or type *Next* when you're ready.`,
+          `${ack}\n\nSend more details if you like (voice or text), or type *Done* when finished.`,
         )
       }
 
@@ -494,7 +489,7 @@ function step3Prompt(photoCount) {
   return (
     `Wonderful! *${photoCount} photo${photoCount > 1 ? 's' : ''} received.* 📸\n\n` +
     `*Step 3 of 5* — Details\n\n` +
-    `Please tell me about your craft. You can type or send voice notes in *any language*.\n\n` +
+    `Please tell me about your craft. You can *type* or send a *voice note* in any language.\n\n` +
     `🪶 *Please share:*\n` +
     `• Materials you use\n` +
     `• How you make it\n` +
@@ -502,7 +497,7 @@ function step3Prompt(photoCount) {
     `• Who taught you\n` +
     `• The story behind it\n` +
     `• Anything special about your craft\n\n` +
-    `Send multiple messages if you like. When finished, type *Next*.`
+    `Send multiple messages if you like. When finished, type *Done*.`
   )
 }
 
@@ -602,6 +597,67 @@ function twilioAuthHeader() {
   const tok = process.env.TWILIO_AUTH_TOKEN
   if (!sid || !tok) throw new Error('Twilio credentials missing')
   return 'Basic ' + Buffer.from(`${sid}:${tok}`).toString('base64')
+}
+
+/**
+ * Show the welcome menu — uses real WhatsApp Quick Reply buttons if a
+ * Content Template SID is configured (TWILIO_MENU_CONTENT_SID env var),
+ * otherwise falls back to plain text with typed options.
+ */
+async function showWelcomeMenu(res, phone, profileName, isRetry = false) {
+  const contentSid = process.env.TWILIO_MENU_CONTENT_SID
+
+  if (contentSid) {
+    // Send the interactive button menu via Twilio API
+    try {
+      await twilioApiSend(phone, {
+        ContentSid: contentSid,
+        ContentVariables: JSON.stringify({ 1: profileName }),
+      })
+      // Tell Twilio we've handled it (no TwiML reply needed)
+      res.setHeader('Content-Type', 'text/xml; charset=utf-8')
+      return res.status(200).send('<?xml version="1.0" encoding="UTF-8"?><Response></Response>')
+    } catch (e) {
+      console.warn('[whatsapp] interactive menu failed, falling back to text:', e.message)
+      // fall through to text fallback
+    }
+  }
+
+  // Fallback: plain text menu (still works, just less pretty)
+  const prefix = isRetry ? `I didn't catch that. Please choose one:\n\n` : ''
+  return sendTwiML(res, prefix + welcomeMenu(profileName))
+}
+
+/**
+ * Direct Twilio API call to send a message (needed for interactive content
+ * which TwiML doesn't support).
+ */
+async function twilioApiSend(to, params = {}) {
+  const sid = process.env.TWILIO_ACCOUNT_SID
+  const tok = process.env.TWILIO_AUTH_TOKEN
+  const from = process.env.TWILIO_WHATSAPP_FROM || 'whatsapp:+14155238886'
+  if (!sid || !tok) throw new Error('Twilio credentials missing')
+
+  const data = new URLSearchParams({ To: to, From: from, ...params })
+  const auth = Buffer.from(`${sid}:${tok}`).toString('base64')
+
+  const resp = await fetch(
+    `https://api.twilio.com/2010-04-01/Accounts/${sid}/Messages.json`,
+    {
+      method: 'POST',
+      headers: {
+        Authorization: `Basic ${auth}`,
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: data,
+    },
+  )
+
+  if (!resp.ok) {
+    const err = await resp.text()
+    throw new Error(`Twilio API ${resp.status}: ${err.slice(0, 200)}`)
+  }
+  return resp.json()
 }
 
 async function loadConv(phone) {
