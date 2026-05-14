@@ -123,7 +123,13 @@ async function generateAndStore(prompt, apiKey, craftId) {
 
     if (!aiResp.ok) {
       const errText = await aiResp.text()
-      console.warn(`[generate-images] ${model}`, aiResp.status, errText.slice(0, 200))
+      // Log enough detail to diagnose — model_not_found, org-not-verified,
+      // quota exceeded, etc. all show up here.
+      console.error(
+        `[generate-images] OpenAI ${model} FAILED:`,
+        aiResp.status,
+        errText.slice(0, 500),
+      )
       return null
     }
 

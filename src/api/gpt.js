@@ -51,8 +51,12 @@ export async function describeCraft({
  *   POST https://generativelanguage.googleapis.com/v1beta/models/imagen-3.0-generate-002:predict
  * and return the generated image URLs here.
  */
-export async function generateSupportingImages({ refImage } = {}) {
-  return refImage ? [refImage] : []
+// Returns an empty array now — actual AI image generation happens
+// server-side via /api/generate-images (gpt-image-2) once the craft is
+// published, NOT here. This used to echo the user's reference photo as a
+// "generated image", which caused duplicate thumbnails in the gallery.
+export async function generateSupportingImages() {
+  return []
 }
 
 // ── Offline / fallback heuristics ────────────────────────────────────────────

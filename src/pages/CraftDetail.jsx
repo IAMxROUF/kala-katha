@@ -56,7 +56,6 @@ export default function CraftDetail() {
   const aiPhotos = generatedExtras.filter(Boolean)
   const allImages = [...realPhotos, ...aiPhotos]
   const cover = allImages[activeImage] || allImages[0]
-  const isAiCover = activeImage >= realPhotos.length
 
   const makerKey = encodeURIComponent(craft.maker?.phone || craft.maker?.id || craft.maker?.name || '')
 
@@ -103,11 +102,6 @@ export default function CraftDetail() {
                         alt={craft.title}
                         className="relative w-full max-h-[600px] mx-auto object-contain transition-transform group-hover:scale-[1.01]"
                       />
-                      {isAiCover && (
-                        <span className="absolute top-3 left-3 chip text-xs bg-indigo-earth/90 text-ivory backdrop-blur">
-                          ✨ AI generated
-                        </span>
-                      )}
                     </>
                   ) : (
                     <div className="aspect-square w-full flex items-center justify-center text-ink-300">
@@ -137,15 +131,11 @@ export default function CraftDetail() {
                         <button
                           key={`ai-${i}`}
                           onClick={() => setActiveImage(idx)}
-                          className={`relative h-16 w-16 overflow-hidden rounded-xl border-2 transition ${
+                          className={`h-16 w-16 overflow-hidden rounded-xl border-2 transition ${
                             idx === activeImage ? 'border-terracotta-400' : 'border-transparent'
                           }`}
-                          title="AI-generated"
                         >
                           <img src={img} alt="" className="h-full w-full object-cover" />
-                          <span className="absolute bottom-0 right-0 px-1 text-[9px] bg-indigo-earth text-ivory rounded-tl">
-                            AI
-                          </span>
                         </button>
                       )
                     })}
