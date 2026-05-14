@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { useCrafts } from '../context/CraftsContext.jsx'
 import { useLang } from '../context/LanguageContext.jsx'
@@ -14,10 +14,20 @@ export default function CraftDetail() {
   const craft = getCraft(id)
   const [activeImage, setActiveImage] = useState(0)
   const [tab, setTab] = useState('photos') // 'photos' | '3d'
+  const [lightboxOpen, setLightboxOpen] = useState(false)
+
+  // ESC closes lightbox
+  useEffect(() => {
+    if (!lightboxOpen) return
+    const onKey = (e) => { if (e.key === 'Escape') setLightboxOpen(false) }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [lightboxOpen])
 
   if (!craft) return <NotFound />
 
   const cover = craft.images?.[activeImage] || craft.images?.[0]
+  const makerKey = encodeURIComponent(craft.maker?.phone || craft.maker?.id || craft.maker?.name || '')
 
   return (
     <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-10">
@@ -41,17 +51,26 @@ export default function CraftDetail() {
 
             {tab === 'photos' && (
               <div className="relative">
-                <div className="aspect-square overflow-hidden rounded-2xl bg-parchment">
+                <button
+                  type="button"
+                  onClick={() => cover && setLightboxOpen(true)}
+                  className="block w-full overflow-hidden rounded-2xl bg-parchment cursor-zoom-in group"
+                  aria-label="Open full photo"
+                >
                   {cover ? (
-                    <img src={cover} alt={craft.title} className="h-full w-full object-cover" />
+                    <img
+                      src={cover}
+                      alt={craft.title}
+                      className="w-full max-h-[640px] object-contain transition-transform group-hover:scale-[1.01]"
+                    />
                   ) : (
-                    <div className="h-full w-full flex items-center justify-center text-ink-300">
+                    <div className="aspect-square w-full flex items-center justify-center text-ink-300">
                       <Paisley size={120} />
                     </div>
                   )}
-                </div>
+                </button>
                 {craft.images?.length > 1 && (
-                  <div className="mt-3 flex gap-2">
+                  <div className="mt-3 flex gap-2 flex-wrap">
                     {craft.images.map((img, i) => (
                       <button
                         key={i}
@@ -91,15 +110,30 @@ export default function CraftDetail() {
           <h1 className="mt-3 font-display text-4xl sm:text-5xl leading-tight">{craft.title}</h1>
           <p className="mt-2 text-ink-500">{craft.region}</p>
 
-          <div className="mt-4 paper p-4 inline-flex items-center gap-3">
-            <div className="h-10 w-10 rounded-full bg-mustard-200 grid place-content-center font-display">
-              {craft.maker?.name?.[0] || '?'}
+          {makerKey ? (
+            <Link
+              to={`/artisan/${makerKey}`}
+              className="mt-4 paper p-4 inline-flex items-center gap-3 hover:bg-parchment transition-colors"
+            >
+              <div className="h-10 w-10 rounded-full bg-mustard-200 grid place-content-center font-display">
+                {craft.maker?.name?.[0] || '?'}
+              </div>
+              <div>
+                <div className="text-xs text-ink-500">{t('craft.shareCredit')}</div>
+                <div className="font-medium">{craft.maker?.name || '—'} <span className="text-ink-300 text-xs ml-1">→</span></div>
+              </div>
+            </Link>
+          ) : (
+            <div className="mt-4 paper p-4 inline-flex items-center gap-3">
+              <div className="h-10 w-10 rounded-full bg-mustard-200 grid place-content-center font-display">
+                {craft.maker?.name?.[0] || '?'}
+              </div>
+              <div>
+                <div className="text-xs text-ink-500">{t('craft.shareCredit')}</div>
+                <div className="font-medium">{craft.maker?.name || '—'}</div>
+              </div>
             </div>
-            <div>
-              <div className="text-xs text-ink-500">{t('craft.shareCredit')}</div>
-              <div className="font-medium">{craft.maker?.name || '—'}</div>
-            </div>
-          </div>
+          )}
 
           <Divider className="mt-8" />
 
@@ -116,6 +150,29 @@ export default function CraftDetail() {
           </div>
         </div>
       </div>
+
+      {/* Lightbox modal */}
+      {lightboxOpen && cover && (
+        <div
+          className="fixed inset-0 z-50 bg-black/85 flex items-center justify-center p-4 cursor-zoom-out animate-fade-up"
+          onClick={() => setLightboxOpen(false)}
+        >
+          <button
+            type="button"
+            className="absolute top-4 right-4 h-10 w-10 rounded-full bg-white/10 hover:bg-white/20 text-white grid place-content-center text-2xl"
+            aria-label="Close"
+            onClick={(e) => { e.stopPropagation(); setLightboxOpen(false) }}
+          >
+            ✕
+          </button>
+          <img
+            src={cover}
+            alt={craft.title}
+            className="max-w-full max-h-full object-contain rounded-lg shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          />
+        </div>
+      )}
     </div>
   )
 }

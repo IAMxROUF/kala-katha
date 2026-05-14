@@ -4,6 +4,7 @@ import Home from './pages/Home.jsx'
 import Auth from './pages/Auth.jsx'
 import Explore from './pages/Explore.jsx'
 import CraftDetail from './pages/CraftDetail.jsx'
+import ArtisanProfile from './pages/ArtisanProfile.jsx'
 import Dashboard from './pages/Dashboard.jsx'
 import DocumentFlow from './pages/Document/index.jsx'
 import DesignSystem from './pages/DesignSystem.jsx'
@@ -18,6 +19,7 @@ export default function App() {
         <Route path="/auth" element={<Auth />} />
         <Route path="/explore" element={<Explore />} />
         <Route path="/craft/:id" element={<CraftDetail />} />
+        <Route path="/artisan/:key" element={<ArtisanProfile />} />
 
         <Route
           path="/dashboard"

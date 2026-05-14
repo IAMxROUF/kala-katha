@@ -1,5 +1,4 @@
 import { createContext, useContext, useEffect, useMemo, useState } from 'react'
-import { seedCrafts } from '../data/seedCrafts.js'
 import { supabase, isSupabaseConfigured, uploadImage } from '../lib/supabase.js'
 
 const CraftsContext = createContext(null)
@@ -126,8 +125,8 @@ export function CraftsProvider({ children }) {
     localStorage.setItem(DRAFTS_KEY, JSON.stringify(drafts))
   }, [drafts])
 
-  // Public catalog: user-published first, then seed
-  const crafts = useMemo(() => [...userCrafts, ...seedCrafts], [userCrafts])
+  // Public catalog: only user-published crafts (no seed data)
+  const crafts = useMemo(() => [...userCrafts], [userCrafts])
 
   function getCraft(id) {
     return crafts.find((c) => c.id === id) || drafts.find((d) => d.id === id)

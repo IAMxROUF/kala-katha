@@ -45,6 +45,38 @@ const S = {
   AWAITING_TECHNIQUE: 'awaiting_technique',
   AWAITING_PHOTOS: 'awaiting_photos',
   AWAITING_STORY: 'awaiting_story',
+  POST_PUBLISH: 'post_publish',         // after publishing — Edit / View / New
+  EDIT_MENU: 'edit_menu',                // pick which field to edit
+  // EDIT_FIELD_<X> states encode the field being edited
+  EDIT_FIELD_TITLE: 'edit_field_title',
+  EDIT_FIELD_CRAFT: 'edit_field_craft',
+  EDIT_FIELD_REGION: 'edit_field_region',
+  EDIT_FIELD_MATERIALS: 'edit_field_materials',
+  EDIT_FIELD_TECHNIQUE: 'edit_field_technique',
+  EDIT_FIELD_TIME: 'edit_field_time',
+  EDIT_FIELD_STORY: 'edit_field_story',
+}
+
+// Maps menu choices → which state to enter + which DB column to update
+const EDIT_FIELDS = [
+  { label: 'Product name',    state: 'edit_field_title',     col: 'title' },
+  { label: 'Craft tradition', state: 'edit_field_craft',     col: 'craft' },
+  { label: 'Region',          state: 'edit_field_region',    col: 'region' },
+  { label: 'Materials',       state: 'edit_field_materials', col: 'materials' },
+  { label: 'Technique',       state: 'edit_field_technique', col: 'technique' },
+  { label: 'Time to make',    state: 'edit_field_time',      col: 'time_to_make' },
+  { label: 'Story',           state: 'edit_field_story',     col: 'story' },
+]
+function pickEditField(input) {
+  const t = input.toLowerCase().trim()
+  const num = parseInt(t, 10)
+  if (!isNaN(num) && num >= 1 && num <= EDIT_FIELDS.length) {
+    return EDIT_FIELDS[num - 1]
+  }
+  return EDIT_FIELDS.find((f) => t.includes(f.label.toLowerCase().split(' ')[0]))
+}
+function fieldFromEditState(state) {
+  return EDIT_FIELDS.find((f) => f.state === state)
 }
 
 const ACTIONS = {
@@ -56,6 +88,7 @@ const ACTIONS = {
   skip:      ['skip', 'no', 'none', '-'],
   view:      ['view', 'see', 'open'],
   share:     ['share'],
+  edit:      ['edit', 'change', 'update'],
   startOver: ['start over', 'restart', 'reset', 'cancel'],
 }
 
@@ -252,6 +285,82 @@ export default async function handler(req, res) {
         )
       }
 
+      // ─── POST PUBLISH (Edit / View / Share / New) ───
+      case S.POST_PUBLISH: {
+        if (matches(lower, ACTIONS.edit)) {
+          await setConv(phone, S.EDIT_MENU, draftId)
+          return sendTwiML(res, editMenuPrompt())
+        }
+        if (matches(lower, ACTIONS.view) || matches(lower, ACTIONS.share)) {
+          const url = process.env.PUBLIC_APP_URL || 'https://kala-katha.vercel.app'
+          return sendTwiML(
+            res,
+            `🔗 *View / Share*\n\n${url}/craft/${draftId}\n\nReply *Edit* to make changes, *New* to document another, or *Hi* for the menu.`,
+          )
+        }
+        if (matches(lower, ACTIONS.start) || ['hi', 'hello', 'namaste', 'hey'].includes(lower)) {
+          await setConv(phone, S.AWAITING_MENU, null)
+          return await showWelcomeMenu(res, phone, profileName)
+        }
+        // Show options again
+        return sendTwiML(
+          res,
+          `📌 *What would you like to do?*\n\n` +
+            `✏️ *Edit* — update any field of this craft\n` +
+            `👁️ *View* — get the link\n` +
+            `▶️ *New* — document another craft`,
+        )
+      }
+
+      // ─── EDIT MENU (pick which field) ───
+      case S.EDIT_MENU: {
+        if (matches(lower, ACTIONS.done) || matches(lower, ACTIONS.startOver)) {
+          await setConv(phone, S.POST_PUBLISH, draftId)
+          const craft = await getDraft(draftId)
+          return sendTwiML(res, `✨ *All saved.*\n\n${successSummary(craft)}`)
+        }
+        const field = pickEditField(text)
+        if (!field) return sendTwiML(res, editMenuPrompt(true))
+        await setConv(phone, field.state, draftId)
+        const current = await getDraft(draftId)
+        const currentVal = current?.[field.col] || '_(empty)_'
+        return sendTwiML(
+          res,
+          `✏️ *Editing: ${field.label}*\n\n` +
+            `Current value:\n_${currentVal}_\n\n` +
+            `Send the new value (type or voice note).\n` +
+            `Or reply *Skip* to keep the current value.`,
+        )
+      }
+
+      // ─── EDIT FIELD VALUE (one case per field) ───
+      case S.EDIT_FIELD_TITLE:
+      case S.EDIT_FIELD_CRAFT:
+      case S.EDIT_FIELD_REGION:
+      case S.EDIT_FIELD_MATERIALS:
+      case S.EDIT_FIELD_TECHNIQUE:
+      case S.EDIT_FIELD_TIME:
+      case S.EDIT_FIELD_STORY: {
+        const field = fieldFromEditState(state)
+        if (!field) {
+          await setConv(phone, S.POST_PUBLISH, draftId)
+          return sendTwiML(res, `Something went wrong. Type *Edit* to try again.`)
+        }
+        if (matches(lower, ACTIONS.skip)) {
+          await setConv(phone, S.EDIT_MENU, draftId)
+          return sendTwiML(res, `↩️ Skipped — kept the existing value.\n\n${editMenuPrompt()}`)
+        }
+        if (!text) {
+          return sendTwiML(res, `Please send the new value for *${field.label}*, or *Skip* to keep it.`)
+        }
+        await updateDraft(draftId, { [field.col]: text })
+        await setConv(phone, S.EDIT_MENU, draftId)
+        return sendTwiML(
+          res,
+          `✅ *${field.label}* updated to:\n_${text}_\n\n${editMenuPrompt()}`,
+        )
+      }
+
       default:
         await setConv(phone, S.IDLE, null)
         return sendTwiML(res, `Let's start fresh. Type *Hi* to begin.`)
@@ -281,6 +390,13 @@ async function handlePhotos({ res, phone, profileName, body, numMedia }) {
     }
     if (state === S.AWAITING_MENU) {
       return sendTwiML(res, `Tap *Start New* first, then I'll guide you through the steps.`)
+    }
+    if (state === S.POST_PUBLISH || state?.startsWith('edit_')) {
+      return sendTwiML(
+        res,
+        `To add or change photos on an already-published craft, please use the website's *Edit* page.\n\n` +
+          `For now, reply *Edit* to update other fields, or *New* to start a fresh craft.`,
+      )
     }
     return sendTwiML(
       res,
@@ -493,7 +609,8 @@ async function processAndPublish({ res, draftId, phone }) {
     .single()
   if (error) throw error
 
-  await setConv(phone, S.IDLE, null)
+  // Stay in POST_PUBLISH so "Edit" / "View" / "Share" / "New" work
+  await setConv(phone, S.POST_PUBLISH, published.id)
   return sendTwiML(res, successSummary(published))
 }
 
@@ -641,6 +758,17 @@ function step7Prompt(photoCount) {
   )
 }
 
+function editMenuPrompt(retry = false) {
+  const prefix = retry ? `I didn't catch that. Please choose one:\n\n` : ''
+  return (
+    `${prefix}` +
+    `✏️ *Edit a field*\n\n` +
+    EDIT_FIELDS.map((f, i) => `${i + 1}. ${f.label}`).join('\n') +
+    `\n\nReply with the *number* or the *name* of the field.\n` +
+    `Or type *Done* when you've finished editing.`
+  )
+}
+
 function successSummary(craft) {
   const url = process.env.PUBLIC_APP_URL || 'https://kala-katha.vercel.app'
   const fields = []
@@ -659,6 +787,7 @@ function successSummary(craft) {
     fields.join('\n\n') +
     `\n\n━━━━━━━━━━━━━━━\n\n` +
     `📌 *What's next?*\n\n` +
+    `✏️ *Edit* — update any field\n` +
     `👁️ *View* — see your craft on the website\n` +
     `📤 *Share* — get a shareable link\n` +
     `▶️ *New* — document another craft\n\n` +

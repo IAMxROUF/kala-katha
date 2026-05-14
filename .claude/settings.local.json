@@ -12,7 +12,23 @@
       "Bash(git -C \"C:/Users/ahmed/Desktop/ClaudeCode\" status)",
       "Bash(git -C \"C:/Users/ahmed/Desktop/ClaudeCode\" config user.name)",
       "Bash(git -C \"C:/Users/ahmed/Desktop/ClaudeCode\" config user.email)",
-      "Bash(git -C \"C:/Users/ahmed/Desktop/ClaudeCode\" remote set-url origin https://github.com/IAMxROUF/kala-katha.git)"
+      "Bash(git -C \"C:/Users/ahmed/Desktop/ClaudeCode\" remote set-url origin https://github.com/IAMxROUF/kala-katha.git)",
+      "Bash(git -C \"C:/Users/ahmed/Desktop/ClaudeCode\" fetch origin)",
+      "Bash(git -C \"C:/Users/ahmed/Desktop/ClaudeCode\" log origin/main --oneline -3)",
+      "Bash(git -C \"C:/Users/ahmed/Desktop/ClaudeCode\" add src/lib/supabase.js)",
+      "Bash(git -C \"C:/Users/ahmed/Desktop/ClaudeCode\" commit -m \"debug: log env vars on mount to diagnose Invalid API key\")",
+      "Bash(git -C \"C:/Users/ahmed/Desktop/ClaudeCode\" push origin main)",
+      "Bash(git -C \"C:/Users/ahmed/Desktop/ClaudeCode\" add src/context/CraftsContext.jsx)",
+      "Bash(git -C \"C:/Users/ahmed/Desktop/ClaudeCode\" commit -m \"fix: generate proper UUIDs for Supabase id column\")",
+      "Bash(git -C \"C:/Users/ahmed/Desktop/ClaudeCode\" add api/whatsapp-webhook.js)",
+      "Bash(git -C \"C:/Users/ahmed/Desktop/ClaudeCode\" commit -m \"feat\\(phase 2A\\): add WhatsApp webhook echo bot\")",
+      "Bash(git -C \"C:/Users/ahmed/Desktop/ClaudeCode\" commit -m \"feat\\(phase 2B\\): full WhatsApp conversation flow with state machine\")",
+      "Bash(git -C \"C:/Users/ahmed/Desktop/ClaudeCode\" commit -m \"feat\\(phase 2B+\\): numbered choices, voice notes via Whisper, OpenAI structuring\")",
+      "Bash(git -C \"C:/Users/ahmed/Desktop/ClaudeCode\" commit -m \"feat: redesign WhatsApp flow with welcome menu, 5 steps, AI extraction\")",
+      "Bash(git -C \"C:/Users/ahmed/Desktop/ClaudeCode\" commit -m \"feat: real WhatsApp quick reply buttons for welcome menu \\(with text fallback\\)\")",
+      "Bash(git -C \"C:/Users/ahmed/Desktop/ClaudeCode\" commit -m \"feat: restructure WhatsApp flow into 7 explicit steps \\(product name, tradition, region, materials, technique-optional, photos 1-4, story\\)\")",
+      "Bash(git -C \"C:/Users/ahmed/Desktop/ClaudeCode\" add -A)",
+      "Bash(git -C \"C:/Users/ahmed/Desktop/ClaudeCode\" commit -m \"feat: text-only logo, remove seeds, photo lightbox, edit button on dashboard, artisan profile page, WhatsApp edit flow\")"
     ]
   }
 }

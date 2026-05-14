@@ -58,15 +58,24 @@ export default function Dashboard() {
                     <Link to={`/craft/${c.id}`} className="ink-link text-sm">
                       View
                     </Link>
-                    <button
-                      className="text-ink-500 hover:text-terracotta-600"
-                      onClick={() => {
-                        if (confirm('Remove this craft from the archive?')) deleteCraft(c.id)
-                      }}
-                      aria-label="Delete craft"
-                    >
-                      <IconTrash size={18} />
-                    </button>
+                    <div className="flex items-center gap-3">
+                      <Link
+                        to={`/document?edit=${c.id}`}
+                        className="text-ink-500 hover:text-terracotta-600 text-sm font-medium"
+                        aria-label="Edit craft"
+                      >
+                        Edit
+                      </Link>
+                      <button
+                        className="text-ink-500 hover:text-terracotta-600"
+                        onClick={() => {
+                          if (confirm('Remove this craft from the archive?')) deleteCraft(c.id)
+                        }}
+                        aria-label="Delete craft"
+                      >
+                        <IconTrash size={18} />
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>

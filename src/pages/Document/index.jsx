@@ -31,7 +31,7 @@ const EMPTY = {
 export default function DocumentFlow() {
   const { t } = useLang()
   const { user } = useAuth()
-  const { drafts, saveDraft, publishCraft } = useCrafts()
+  const { drafts, userCrafts, saveDraft, publishCraft } = useCrafts()
   const navigate = useNavigate()
   const [params] = useSearchParams()
 
@@ -39,8 +39,17 @@ export default function DocumentFlow() {
   const [data, setData] = useState(EMPTY)
   const [savingDraft, setSavingDraft] = useState(false)
 
-  // If we landed here with ?draft=, hydrate from that draft.
+  // Hydrate from ?edit= (published craft) or ?draft= (saved draft)
   useEffect(() => {
+    const editId = params.get('edit')
+    if (editId) {
+      const c = userCrafts.find((x) => x.id === editId)
+      if (c) {
+        setData({ ...EMPTY, ...c, images: c.images?.length ? c.images : EMPTY.images })
+        setStep(5) // Jump straight to the review form with all fields editable
+        return
+      }
+    }
     const draftId = params.get('draft')
     if (!draftId) return
     const d = drafts.find((x) => x.id === draftId)
@@ -48,7 +57,7 @@ export default function DocumentFlow() {
       setData({ ...EMPTY, ...d, images: d.images?.length ? d.images : EMPTY.images })
       setStep(d.lastStep || 1)
     }
-  }, [params, drafts])
+  }, [params, drafts, userCrafts])
 
   // Inject maker info from the logged-in user.
   useEffect(() => {

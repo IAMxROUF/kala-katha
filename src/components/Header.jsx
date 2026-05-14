@@ -26,15 +26,12 @@ export default function Header() {
     <header className="sticky top-0 z-40 bg-ivory/85 backdrop-blur supports-[backdrop-filter]:bg-ivory/70 border-b border-ink-300/15">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="flex h-16 items-center justify-between gap-4">
-          <Link to="/" className="flex items-center gap-2 group">
-            <Paisley size={36} className="text-terracotta-500 group-hover:animate-sway" />
-            <div className="leading-tight">
-              <div className="font-display text-xl text-ink-900">
-                {t('brand.name')}
-              </div>
-              <div className="hidden sm:block text-[11px] text-ink-500 -mt-0.5 font-hand">
-                {t('brand.tagline')}
-              </div>
+          <Link to="/" className="leading-tight">
+            <div className="font-display text-xl text-ink-900 tracking-tight">
+              {t('brand.name')}
+            </div>
+            <div className="hidden sm:block text-[11px] text-ink-500 -mt-0.5 font-hand">
+              {t('brand.tagline')}
             </div>
           </Link>
 
