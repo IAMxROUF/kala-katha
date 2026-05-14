@@ -33,7 +33,8 @@
       "Bash(git -C \"C:/Users/ahmed/Desktop/ClaudeCode\" commit -m \"feat: user pill in header links to artisan profile\")",
       "Bash(git -C \"C:/Users/ahmed/Desktop/ClaudeCode\" commit -m \"fix: artisan profile shows for own user even without crafts/extras yet\")",
       "Bash(git -C \"C:/Users/ahmed/Desktop/ClaudeCode\" commit -m \"feat: say 'My crafts' on own artisan profile, 'Their crafts' for visitors\")",
-      "Bash(git -C \"C:/Users/ahmed/Desktop/ClaudeCode\" commit -m \"fix: profile finds own crafts by any identifier; 'My studio' label\")"
+      "Bash(git -C \"C:/Users/ahmed/Desktop/ClaudeCode\" commit -m \"fix: profile finds own crafts by any identifier; 'My studio' label\")",
+      "Bash(git -C \"C:/Users/ahmed/Desktop/ClaudeCode\" commit -m \"feat: normalise phone numbers across web + WhatsApp \\(E.164 canonical\\)\")"
     ]
   }
 }

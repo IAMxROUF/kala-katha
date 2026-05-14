@@ -97,6 +97,21 @@ function matches(input, list) {
   return list.some((w) => t === w)
 }
 
+// ── Normalise a phone number to E.164 (no "whatsapp:" prefix, no spaces).
+// Mirrors src/lib/phone.js so web + WhatsApp profiles match.
+function normalizePhone(input) {
+  if (!input) return ''
+  let s = String(input).trim()
+  s = s.replace(/^whatsapp:/i, '')
+  s = s.replace(/[\s\-().]/g, '')
+  if (!s) return ''
+  if (s.startsWith('+')) return s
+  s = s.replace(/^0+/, '')
+  if (/^\d{10}$/.test(s)) return '+91' + s
+  if (/^91\d{10}$/.test(s)) return '+' + s
+  return '+' + s
+}
+
 // ════════════════════════════════════════════════════════════════════════
 // HANDLER
 // ════════════════════════════════════════════════════════════════════════
@@ -185,7 +200,7 @@ export default async function handler(req, res) {
           .from('crafts')
           .insert({
             status: 'draft',
-            maker_phone: phone,
+            maker_phone: normalizePhone(phone),
             maker_name: profileName,
             title: text,
             last_step: 1,
@@ -797,16 +812,22 @@ function successSummary(craft) {
 }
 
 async function myCraftsText(phone) {
+  // Match by normalised phone so we find crafts whether they were stored
+  // with or without the "whatsapp:" prefix.
+  const normalized = normalizePhone(phone)
   const { data: crafts } = await supabase
     .from('crafts')
-    .select('id, title, craft, region, published_at')
-    .eq('maker_phone', phone)
+    .select('id, title, craft, region, published_at, maker_phone')
     .eq('status', 'published')
     .order('published_at', { ascending: false })
-    .limit(10)
+    .limit(50)
+
+  const mine = (crafts || []).filter(
+    (c) => normalizePhone(c.maker_phone) === normalized,
+  ).slice(0, 10)
 
   const url = process.env.PUBLIC_APP_URL || 'https://kala-katha.vercel.app'
-  if (!crafts || crafts.length === 0) {
+  if (!mine.length) {
     return (
       `📚 *Your Archive*\n\n` +
       `You haven't documented any crafts yet.\n\n` +
@@ -814,12 +835,12 @@ async function myCraftsText(phone) {
     )
   }
 
-  const list = crafts
+  const list = mine
     .map((c, i) => `${i + 1}. *${c.title || 'Untitled'}*${c.craft ? ` _(${c.craft})_` : ''}`)
     .join('\n')
 
   return (
-    `📚 *Your Archive — ${crafts.length} craft${crafts.length > 1 ? 's' : ''}*\n\n` +
+    `📚 *Your Archive — ${mine.length} craft${mine.length > 1 ? 's' : ''}*\n\n` +
     list +
     `\n\n👉 See all: ${url}/explore\n\n` +
     `Type *Start New* to document a new craft.`

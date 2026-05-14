@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { useCrafts } from '../context/CraftsContext.jsx'
 import { useAuth } from '../context/AuthContext.jsx'
+import { samePhone, normalizePhone } from '../lib/phone.js'
 import CraftCard from '../components/CraftCard.jsx'
 import { Divider, Paisley } from '../components/Decorations.jsx'
 import { IconUser } from '../components/Icons.jsx'
@@ -46,13 +47,17 @@ export default function ArtisanProfile() {
   const { user } = useAuth()
 
   // Is this the logged-in user's own profile?
+  // Match against id / name / normalized-phone so it works regardless of
+  // how the URL was generated.
   const isOwnProfile =
     !!user &&
-    (user.phone === decodedKey || user.id === decodedKey || user.name === decodedKey)
+    (samePhone(user.phone, decodedKey) ||
+      user.id === decodedKey ||
+      user.name === decodedKey)
 
   // When viewing own profile, match crafts against ALL identifiers
   // (id / phone / name) so we find every craft made on this account,
-  // even ones created before we started storing phone in the maker info.
+  // even ones created before phone normalisation.
   const identifiers = isOwnProfile
     ? [user?.id, user?.phone, user?.name].filter(Boolean)
     : [decodedKey]
@@ -63,7 +68,7 @@ export default function ArtisanProfile() {
         const m = c.maker || {}
         return identifiers.some(
           (key) =>
-            (m.phone && m.phone === key) ||
+            (m.phone && samePhone(m.phone, key)) ||  // phones compared normalised
             (m.id && m.id === key) ||
             (m.name && m.name === key),
         )

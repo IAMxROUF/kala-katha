@@ -1,4 +1,5 @@
 import { createContext, useContext, useEffect, useState } from 'react'
+import { normalizePhone } from '../lib/phone.js'
 
 const AuthContext = createContext(null)
 const STORAGE_KEY = 'kk.user'
@@ -33,7 +34,7 @@ export function AuthProvider({ children }) {
         }
         const next = {
           id: 'u_' + Math.random().toString(36).slice(2, 9),
-          phone,
+          phone: normalizePhone(phone),  // canonical form for cross-channel matching
           name: name || 'Maker',
           role,
           region,

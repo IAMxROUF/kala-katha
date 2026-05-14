@@ -2,6 +2,7 @@ import { Link, NavLink } from 'react-router-dom'
 import { useState } from 'react'
 import { useLang } from '../context/LanguageContext.jsx'
 import { useAuth } from '../context/AuthContext.jsx'
+import { normalizePhone } from '../lib/phone.js'
 import LanguageSwitcher from './LanguageSwitcher.jsx'
 import { IconMenu, IconClose, IconUser } from './Icons.jsx'
 import { Paisley } from './Decorations.jsx'
@@ -59,7 +60,7 @@ export default function Header() {
             {isAuthed ? (
               <div className="hidden sm:flex items-center gap-2">
                 <Link
-                  to={`/artisan/${encodeURIComponent(user?.phone || user?.id || user?.name || '')}`}
+                  to={`/artisan/${encodeURIComponent(normalizePhone(user?.phone) || user?.id || user?.name || '')}`}
                   className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-full bg-parchment border border-ink-300/20 hover:bg-mustard-100 transition-colors"
                   title="View / edit my profile"
                 >
@@ -114,7 +115,7 @@ export default function Header() {
               ) : (
                 <>
                   <Link
-                    to={`/artisan/${encodeURIComponent(user?.phone || user?.id || user?.name || '')}`}
+                    to={`/artisan/${encodeURIComponent(normalizePhone(user?.phone) || user?.id || user?.name || '')}`}
                     onClick={() => setOpen(false)}
                     className="flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm font-medium text-ink-700 hover:bg-parchment mt-2"
                   >
