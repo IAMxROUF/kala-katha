@@ -491,17 +491,71 @@ async function downloadAndStoreImage(twilioUrl, mime, phone) {
 }
 
 // ════════════════════════════════════════════════════════════════════════
-// VOICE NOTE TRANSCRIPTION (Whisper)
+// VOICE NOTE TRANSCRIPTION
+// Primary: Google Gemini (free, handles all Indian languages)
+// Fallback: OpenAI Whisper (paid, only used if Gemini key missing or fails)
 // ════════════════════════════════════════════════════════════════════════
 async function transcribeAudio(twilioAudioUrl, mime) {
-  const apiKey = process.env.OPENAI_API_KEY
-  if (!apiKey || !twilioAudioUrl) return null
+  if (!twilioAudioUrl) return null
 
+  // Download once from Twilio — reused by whichever transcriber runs
   const auth = twilioAuthHeader()
   const dl = await fetch(twilioAudioUrl, { headers: { Authorization: auth } })
   if (!dl.ok) throw new Error(`Twilio audio fetch ${dl.status}`)
   const audioBuf = await dl.arrayBuffer()
 
+  // Try Gemini first
+  if (process.env.GEMINI_API_KEY) {
+    try {
+      const text = await transcribeWithGemini(audioBuf, mime)
+      if (text) return text
+    } catch (e) {
+      console.warn('[whatsapp] Gemini transcribe failed, falling back:', e.message)
+    }
+  }
+
+  // Fallback: OpenAI Whisper
+  if (process.env.OPENAI_API_KEY) {
+    return await transcribeWithWhisper(audioBuf, mime)
+  }
+
+  return null
+}
+
+async function transcribeWithGemini(audioBuf, mime) {
+  const apiKey = process.env.GEMINI_API_KEY
+  const model = process.env.GEMINI_MODEL || 'gemini-2.0-flash'
+  const audioBase64 = Buffer.from(audioBuf).toString('base64')
+
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`
+  const resp = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      contents: [
+        {
+          parts: [
+            {
+              text:
+                'Transcribe this audio exactly as spoken. Return ONLY the transcript text, in the original language spoken — do not translate. No prefixes, no commentary.',
+            },
+            { inline_data: { mime_type: mime || 'audio/ogg', data: audioBase64 } },
+          ],
+        },
+      ],
+      generationConfig: { temperature: 0.1, maxOutputTokens: 1024 },
+    }),
+  })
+  if (!resp.ok) {
+    throw new Error(`Gemini transcribe ${resp.status}: ${(await resp.text()).slice(0, 200)}`)
+  }
+  const data = await resp.json()
+  const text = data?.candidates?.[0]?.content?.parts?.[0]?.text
+  return text?.trim() || null
+}
+
+async function transcribeWithWhisper(audioBuf, mime) {
+  const apiKey = process.env.OPENAI_API_KEY
   const ext = (mime.split('/')[1] || 'ogg').split(';')[0]
   const blob = new Blob([audioBuf], { type: mime })
   const form = new FormData()
@@ -523,26 +577,22 @@ async function transcribeAudio(twilioAudioUrl, mime) {
 
 // ════════════════════════════════════════════════════════════════════════
 // AI STRUCTURING (description + fill-in-blanks for technique/time)
+// Primary: Gemini (free). Fallback: OpenAI.
 // ════════════════════════════════════════════════════════════════════════
-async function structureWithAI(draft) {
-  const apiKey = process.env.OPENAI_API_KEY
-  if (!apiKey) return null
-
-  const model = process.env.OPENAI_MODEL || 'gpt-4o-mini'
-
-  const system = `You are a specialist in Indian indigenous crafts and cultural heritage documentation.
+const STRUCTURE_SYSTEM = `You are a specialist in Indian indigenous crafts and cultural heritage documentation.
 The artisan has provided structured details about a craft product, plus free-form notes about the product (in any Indian language).
 Your job: write a clear, informative English description of the *product itself* — what it is, what it's used for, its significance — and fill in missing fields.
 Focus on the PRODUCT, not the artisan's personal story. Be factual and respectful.
 Return ONLY a valid JSON object.`
 
-  const user = `Document this Indian craft product.
+function structureUserPrompt(draft) {
+  return `Document this Indian craft product.
 
 Product name:    ${draft.title || '(unknown)'}
 Craft tradition: ${draft.craft || '(unknown)'}
 Region:          ${draft.region || '(unknown)'}
 Materials:       ${draft.materials || '(unknown)'}
-Technique:       ${draft.technique || '(not provided — please describe based on the tradition)'}
+Technique:       ${draft.technique || '(not provided — describe based on the tradition)'}
 
 Artisan's notes about the product (any language — translate to English):
 """
@@ -550,21 +600,70 @@ ${draft.story || ''}
 """
 
 Return JSON with EXACTLY these 3 keys (all in English):
-- "description" : 2-3 informative sentences ABOUT THE PRODUCT — what it is, what it's used for, its cultural significance, and a hint of how it's made. Do not focus on the artisan personally.
-- "technique"   : If the artisan provided a technique above, polish it into 1-2 clear English sentences. If empty, describe the typical making process for this craft tradition.
-- "time"        : Estimated time to make one piece (e.g. "3-5 days", "2 weeks").`
+- "description" : 2-3 informative sentences ABOUT THE PRODUCT — what it is, what it's used for, its cultural significance, and a hint of how it's made.
+- "technique"   : 1-2 clear English sentences on the making process.
+- "time"        : Estimated time to make one piece (e.g. "3-5 days").`
+}
+
+async function structureWithAI(draft) {
+  // Try Gemini first (free)
+  if (process.env.GEMINI_API_KEY) {
+    try {
+      const r = await structureWithGemini(draft)
+      if (r) return r
+    } catch (e) {
+      console.warn('[whatsapp] Gemini structure failed, falling back:', e.message)
+    }
+  }
+  // Fallback: OpenAI
+  if (process.env.OPENAI_API_KEY) {
+    return await structureWithOpenAI(draft)
+  }
+  return null
+}
+
+async function structureWithGemini(draft) {
+  const apiKey = process.env.GEMINI_API_KEY
+  const model = process.env.GEMINI_MODEL || 'gemini-2.0-flash'
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`
+
+  const resp = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      systemInstruction: { parts: [{ text: STRUCTURE_SYSTEM }] },
+      contents: [{ role: 'user', parts: [{ text: structureUserPrompt(draft) }] }],
+      generationConfig: { responseMimeType: 'application/json', temperature: 0.6, maxOutputTokens: 600 },
+    }),
+  })
+  if (!resp.ok) throw new Error(`Gemini ${resp.status}: ${(await resp.text()).slice(0, 200)}`)
+  const data = await resp.json()
+  const text = data?.candidates?.[0]?.content?.parts?.[0]?.text
+  if (!text) return null
+  try {
+    const p = JSON.parse(text.match(/\{[\s\S]*\}/)?.[0] || text)
+    return {
+      description: p.description || '',
+      technique: p.technique || '',
+      time: p.time || '',
+    }
+  } catch {
+    return null
+  }
+}
+
+async function structureWithOpenAI(draft) {
+  const apiKey = process.env.OPENAI_API_KEY
+  const model = process.env.OPENAI_MODEL || 'gpt-4o-mini'
 
   const resp = await fetch('https://api.openai.com/v1/chat/completions', {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${apiKey}`,
-    },
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` },
     body: JSON.stringify({
       model,
       messages: [
-        { role: 'system', content: system },
-        { role: 'user', content: user },
+        { role: 'system', content: STRUCTURE_SYSTEM },
+        { role: 'user', content: structureUserPrompt(draft) },
       ],
       response_format: { type: 'json_object' },
       temperature: 0.6,
@@ -579,7 +678,6 @@ Return JSON with EXACTLY these 3 keys (all in English):
   const data = await resp.json()
   const txt = data?.choices?.[0]?.message?.content
   if (!txt) return null
-
   try {
     const p = JSON.parse(txt)
     return {

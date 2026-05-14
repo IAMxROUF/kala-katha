@@ -38,7 +38,8 @@
       "Bash(git -C \"C:/Users/ahmed/Desktop/ClaudeCode\" commit -m \"feat: OpenAI for documentation + gpt-image-2 generates 4 product images per craft\")",
       "Bash(git -C \"C:/Users/ahmed/Desktop/ClaudeCode\" commit -m \"fix: remove duplicate-photo bug; remove AI badges; better OpenAI error logging\")",
       "Bash(git -C \"C:/Users/ahmed/Desktop/ClaudeCode\" commit -m \"feat: free AI image generation via Pollinations.ai \\(no API key, no billing\\)\")",
-      "Bash(git -C \"C:/Users/ahmed/Desktop/ClaudeCode\" commit -m \"remove: AI image generation feature; users upload photos manually\")"
+      "Bash(git -C \"C:/Users/ahmed/Desktop/ClaudeCode\" commit -m \"remove: AI image generation feature; users upload photos manually\")",
+      "Bash(git -C \"C:/Users/ahmed/Desktop/ClaudeCode\" commit -m \"feat: Gemini as primary AI \\(free\\) for description + voice transcription, OpenAI fallback\")"
     ]
   }
 }
