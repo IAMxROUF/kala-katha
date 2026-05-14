@@ -15,8 +15,6 @@ export default function CraftDetail() {
   const [activeImage, setActiveImage] = useState(0)
   const [tab, setTab] = useState('photos') // 'photos' | '3d'
   const [lightboxOpen, setLightboxOpen] = useState(false)
-  const [generatedExtras, setGeneratedExtras] = useState(craft?.generatedExtras || [])
-  const [generatingImages, setGeneratingImages] = useState(false)
 
   // ESC closes lightbox
   useEffect(() => {
@@ -26,35 +24,10 @@ export default function CraftDetail() {
     return () => window.removeEventListener('keydown', onKey)
   }, [lightboxOpen])
 
-  // Lazy-generate AI product images if the craft doesn't have them yet.
-  useEffect(() => {
-    if (!craft?.id) return
-    if (Array.isArray(generatedExtras) && generatedExtras.length >= 4) return
-    let alive = true
-    setGeneratingImages(true)
-    fetch('/api/generate-images', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ craftId: craft.id }),
-    })
-      .then((r) => r.json())
-      .then((data) => {
-        if (!alive) return
-        if (Array.isArray(data?.urls) && data.urls.length) {
-          setGeneratedExtras(data.urls)
-        }
-      })
-      .catch(() => {})
-      .finally(() => alive && setGeneratingImages(false))
-    return () => { alive = false }
-  }, [craft?.id])
-
   if (!craft) return <NotFound />
 
-  // Combine real photos with AI-generated extras for the gallery
-  const realPhotos = (craft.images || []).filter(Boolean)
-  const aiPhotos = generatedExtras.filter(Boolean)
-  const allImages = [...realPhotos, ...aiPhotos]
+  // Only the photos the user uploaded — no AI-generated images
+  const allImages = (craft.images || []).filter(Boolean)
   const cover = allImages[activeImage] || allImages[0]
 
   const makerKey = encodeURIComponent(craft.maker?.phone || craft.maker?.id || craft.maker?.name || '')
@@ -110,43 +83,20 @@ export default function CraftDetail() {
                   )}
                 </button>
 
-                {/* Thumbnail strip: real photos first, then AI-generated */}
+                {/* Thumbnail strip */}
                 {allImages.length > 1 && (
                   <div className="mt-3 flex gap-2 flex-wrap">
-                    {realPhotos.map((img, i) => (
+                    {allImages.map((img, i) => (
                       <button
-                        key={`real-${i}`}
+                        key={i}
                         onClick={() => setActiveImage(i)}
-                        className={`relative h-16 w-16 overflow-hidden rounded-xl border-2 transition ${
+                        className={`h-16 w-16 overflow-hidden rounded-xl border-2 transition ${
                           i === activeImage ? 'border-terracotta-400' : 'border-transparent'
                         }`}
-                        title="Original photo"
                       >
                         <img src={img} alt="" className="h-full w-full object-cover" />
                       </button>
                     ))}
-                    {aiPhotos.map((img, i) => {
-                      const idx = realPhotos.length + i
-                      return (
-                        <button
-                          key={`ai-${i}`}
-                          onClick={() => setActiveImage(idx)}
-                          className={`h-16 w-16 overflow-hidden rounded-xl border-2 transition ${
-                            idx === activeImage ? 'border-terracotta-400' : 'border-transparent'
-                          }`}
-                        >
-                          <img src={img} alt="" className="h-full w-full object-cover" />
-                        </button>
-                      )
-                    })}
-                  </div>
-                )}
-
-                {/* Generating-images placeholder strip */}
-                {generatingImages && aiPhotos.length === 0 && (
-                  <div className="mt-3 flex gap-2 items-center text-xs text-ink-500">
-                    <div className="h-4 w-4 rounded-full border-2 border-terracotta-400 border-t-transparent animate-spin" />
-                    <span>AI is generating additional product photos…</span>
                   </div>
                 )}
               </div>

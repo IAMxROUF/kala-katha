@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useLang } from '../../context/LanguageContext.jsx'
 import { generate3DModel } from '../../api/tripo.js'
-import { describeCraft, generateSupportingImages } from '../../api/gpt.js'
+import { describeCraft } from '../../api/gpt.js'
 import { Sun } from '../../components/Decorations.jsx'
 import { IconCheck } from '../../components/Icons.jsx'
 
@@ -18,7 +18,6 @@ const PATIENCE_MESSAGES = [
 const STAGES = [
   { key: 'building3d', labelKey: 'doc.step4.building3d' },
   { key: 'writingDesc', labelKey: 'doc.step4.writingDesc' },
-  { key: 'renderingExtra', labelKey: 'doc.step4.renderingExtra' },
 ]
 
 export default function Step4Processing({ data, update, onDone }) {
@@ -75,14 +74,6 @@ export default function Step4Processing({ data, update, onDone }) {
           technique: data.technique?.trim() || desc.technique,
           time: data.time?.trim() || desc.time,
         })
-        setProgress(100)
-
-        // ── Stage 2: Supporting images (fast) ──────────────────────────────
-        setStage(2)
-        setProgress(0)
-        const extras = await generateSupportingImages({ refImage: data.images?.[0] })
-        if (cancelled) return
-        update({ generatedExtras: extras })
         setProgress(100)
 
         setDone(true)

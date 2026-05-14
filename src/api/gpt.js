@@ -43,21 +43,7 @@ export async function describeCraft({
   }
 }
 
-/**
- * Placeholder for future Gemini Imagen / image-generation support.
- * Currently echoes the reference image so the gallery always has content.
- *
- * To enable real image generation, wire a new Netlify function that calls:
- *   POST https://generativelanguage.googleapis.com/v1beta/models/imagen-3.0-generate-002:predict
- * and return the generated image URLs here.
- */
-// Returns an empty array now — actual AI image generation happens
-// server-side via /api/generate-images (gpt-image-2) once the craft is
-// published, NOT here. This used to echo the user's reference photo as a
-// "generated image", which caused duplicate thumbnails in the gallery.
-export async function generateSupportingImages() {
-  return []
-}
+// AI image generation has been removed — users upload their own photos.
 
 // ── Offline / fallback heuristics ────────────────────────────────────────────
 // Used when the Netlify function is unreachable (local dev without netlify dev,

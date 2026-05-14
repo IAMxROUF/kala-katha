@@ -624,25 +624,9 @@ async function processAndPublish({ res, draftId, phone }) {
     .single()
   if (error) throw error
 
-  // Fire-and-forget: trigger AI product-image generation. The endpoint
-  // self-caches, so even if this fires twice the user only pays once.
-  // We don't await — the WhatsApp reply must go out within Twilio's timeout.
-  triggerImageGeneration(published.id)
-
   // Stay in POST_PUBLISH so "Edit" / "View" / "Share" / "New" work
   await setConv(phone, S.POST_PUBLISH, published.id)
   return sendTwiML(res, successSummary(published))
-}
-
-function triggerImageGeneration(craftId) {
-  const base = process.env.PUBLIC_APP_URL
-  if (!base) return // No public URL → skip silently
-  // Fire-and-forget; intentionally not awaited
-  fetch(`${base}/api/generate-images`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ craftId }),
-  }).catch((e) => console.warn('[whatsapp] generate-images trigger:', e.message))
 }
 
 // ════════════════════════════════════════════════════════════════════════
