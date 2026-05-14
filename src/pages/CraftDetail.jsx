@@ -15,6 +15,8 @@ export default function CraftDetail() {
   const [activeImage, setActiveImage] = useState(0)
   const [tab, setTab] = useState('photos') // 'photos' | '3d'
   const [lightboxOpen, setLightboxOpen] = useState(false)
+  const [generatedExtras, setGeneratedExtras] = useState(craft?.generatedExtras || [])
+  const [generatingImages, setGeneratingImages] = useState(false)
 
   // ESC closes lightbox
   useEffect(() => {
@@ -24,9 +26,38 @@ export default function CraftDetail() {
     return () => window.removeEventListener('keydown', onKey)
   }, [lightboxOpen])
 
+  // Lazy-generate AI product images if the craft doesn't have them yet.
+  useEffect(() => {
+    if (!craft?.id) return
+    if (Array.isArray(generatedExtras) && generatedExtras.length >= 4) return
+    let alive = true
+    setGeneratingImages(true)
+    fetch('/api/generate-images', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ craftId: craft.id }),
+    })
+      .then((r) => r.json())
+      .then((data) => {
+        if (!alive) return
+        if (Array.isArray(data?.urls) && data.urls.length) {
+          setGeneratedExtras(data.urls)
+        }
+      })
+      .catch(() => {})
+      .finally(() => alive && setGeneratingImages(false))
+    return () => { alive = false }
+  }, [craft?.id])
+
   if (!craft) return <NotFound />
 
-  const cover = craft.images?.[activeImage] || craft.images?.[0]
+  // Combine real photos with AI-generated extras for the gallery
+  const realPhotos = (craft.images || []).filter(Boolean)
+  const aiPhotos = generatedExtras.filter(Boolean)
+  const allImages = [...realPhotos, ...aiPhotos]
+  const cover = allImages[activeImage] || allImages[0]
+  const isAiCover = activeImage >= realPhotos.length
+
   const makerKey = encodeURIComponent(craft.maker?.phone || craft.maker?.id || craft.maker?.name || '')
 
   return (
@@ -60,7 +91,7 @@ export default function CraftDetail() {
                 >
                   {cover ? (
                     <>
-                      {/* Blurred backdrop using the same image — softens the empty sides */}
+                      {/* Blurred backdrop softens the empty sides */}
                       <img
                         src={cover}
                         alt=""
@@ -72,6 +103,11 @@ export default function CraftDetail() {
                         alt={craft.title}
                         className="relative w-full max-h-[600px] mx-auto object-contain transition-transform group-hover:scale-[1.01]"
                       />
+                      {isAiCover && (
+                        <span className="absolute top-3 left-3 chip text-xs bg-indigo-earth/90 text-ivory backdrop-blur">
+                          ✨ AI generated
+                        </span>
+                      )}
                     </>
                   ) : (
                     <div className="aspect-square w-full flex items-center justify-center text-ink-300">
@@ -79,19 +115,48 @@ export default function CraftDetail() {
                     </div>
                   )}
                 </button>
-                {craft.images?.length > 1 && (
+
+                {/* Thumbnail strip: real photos first, then AI-generated */}
+                {allImages.length > 1 && (
                   <div className="mt-3 flex gap-2 flex-wrap">
-                    {craft.images.map((img, i) => (
+                    {realPhotos.map((img, i) => (
                       <button
-                        key={i}
+                        key={`real-${i}`}
                         onClick={() => setActiveImage(i)}
-                        className={`h-16 w-16 overflow-hidden rounded-xl border-2 transition ${
+                        className={`relative h-16 w-16 overflow-hidden rounded-xl border-2 transition ${
                           i === activeImage ? 'border-terracotta-400' : 'border-transparent'
                         }`}
+                        title="Original photo"
                       >
                         <img src={img} alt="" className="h-full w-full object-cover" />
                       </button>
                     ))}
+                    {aiPhotos.map((img, i) => {
+                      const idx = realPhotos.length + i
+                      return (
+                        <button
+                          key={`ai-${i}`}
+                          onClick={() => setActiveImage(idx)}
+                          className={`relative h-16 w-16 overflow-hidden rounded-xl border-2 transition ${
+                            idx === activeImage ? 'border-terracotta-400' : 'border-transparent'
+                          }`}
+                          title="AI-generated"
+                        >
+                          <img src={img} alt="" className="h-full w-full object-cover" />
+                          <span className="absolute bottom-0 right-0 px-1 text-[9px] bg-indigo-earth text-ivory rounded-tl">
+                            AI
+                          </span>
+                        </button>
+                      )
+                    })}
+                  </div>
+                )}
+
+                {/* Generating-images placeholder strip */}
+                {generatingImages && aiPhotos.length === 0 && (
+                  <div className="mt-3 flex gap-2 items-center text-xs text-ink-500">
+                    <div className="h-4 w-4 rounded-full border-2 border-terracotta-400 border-t-transparent animate-spin" />
+                    <span>AI is generating additional product photos…</span>
                   </div>
                 )}
               </div>
