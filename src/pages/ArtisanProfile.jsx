@@ -70,9 +70,14 @@ export default function ArtisanProfile() {
     setExtras(loadExtras(decodedKey))
   }, [decodedKey])
 
+  // If this is the user's own profile and we don't have saved name/region
+  // yet, fall back to their auth name / region so the page shows useful info.
+  const fallbackName = isOwnProfile ? user?.name : ''
+  const fallbackRegion = isOwnProfile ? user?.region : ''
+
   const profile = {
-    name:    extras.name    || firstMaker.name    || decodedKey || 'Anonymous Artisan',
-    region:  extras.region  || firstMaker.region  || '',
+    name:    extras.name    || firstMaker.name    || fallbackName || decodedKey || 'Anonymous Artisan',
+    region:  extras.region  || firstMaker.region  || fallbackRegion || '',
     type:    extras.type    || 'individual',
     contact: extras.contact || '',
     bio:     extras.bio     || '',
@@ -82,7 +87,9 @@ export default function ArtisanProfile() {
   const [form, setForm] = useState(profile)
   useEffect(() => setForm(profile), [extras, firstMaker.name])
 
-  if (!myCrafts.length && !extras.name) return <NotFound />
+  // Only show 404 if there's truly nothing here — no crafts, no saved
+  // profile, AND it isn't the current user's own profile.
+  if (!myCrafts.length && !extras.name && !isOwnProfile) return <NotFound />
 
   function handleSave() {
     saveExtras(decodedKey, form)
@@ -237,7 +244,16 @@ export default function ArtisanProfile() {
 
       {myCrafts.length === 0 ? (
         <div className="paper mt-6 p-10 text-center">
-          <p className="text-ink-700">No crafts yet.</p>
+          <p className="text-ink-700">
+            {isOwnProfile
+              ? "You haven't documented any crafts yet."
+              : `${profile.name} hasn't documented any crafts yet.`}
+          </p>
+          {isOwnProfile && (
+            <Link to="/document" className="btn-primary mt-4 inline-flex text-sm">
+              Document your first craft
+            </Link>
+          )}
         </div>
       ) : (
         <div className="mt-6 grid gap-5 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
